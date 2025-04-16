@@ -244,13 +244,13 @@ export default function GalleryPage() {
     setShowProjectForm(true);
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
+  const handleFormChange = (e): void => {
     const { name, value, type } = e.target;
     
     if (type === 'checkbox') {
       setFormValues(prev => ({
         ...prev,
-        [name]: (e.target as HTMLInputElement).checked
+        [name]: (e.target).checked
       }));
     } else {
       setFormValues(prev => ({
@@ -260,7 +260,7 @@ export default function GalleryPage() {
     }
   };
 
-  const handleTechInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleTechInputChange = (e): void => {
     setTechInput(e.target.value);
   };
 
