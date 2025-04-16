@@ -35,9 +35,13 @@ interface FormChangeEvent {
   target: {
     name: string;
     value: string;
-    type: string;
+    type?: string;
     checked?: boolean;
   }
+}
+
+interface MouseClickEvent {
+  preventDefault: () => void;
 }
 
 // Sample projects data
@@ -141,7 +145,7 @@ export default function GalleryPage() {
   const [secretKeyInput, setSecretKeyInput] = useState('' as string);
 
   // Refs
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef(null);
 
   // Admin access through typing "admindev"
   useEffect(() => {
@@ -255,6 +259,12 @@ export default function GalleryPage() {
       });
     }
     setShowProjectForm(true);
+  };
+
+  // Overload for MouseEvent compatibility
+  const handleOpenProjectForm = (e: MouseClickEvent): void => {
+    e.preventDefault();
+    openProjectForm();
   };
 
   const handleFormChange = (e: FormChangeEvent): void => {
@@ -549,11 +559,11 @@ export default function GalleryPage() {
         {isAdmin && (
           <div className="flex justify-end mb-8">
             <button
-              onClick={openProjectForm}
+              onClick={handleOpenProjectForm}
               className="btn btn-primary"
             >
               <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 002 0v-5h5a1 1 0 002-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 002 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               Add New Project
             </button>

@@ -14,6 +14,12 @@ interface FormSubmitEvent {
   preventDefault: () => void;
 }
 
+// Define the result interface
+interface SubmitResult {
+  success: boolean;
+  message: string;
+}
+
 export default function Contact() {
   const [formData, setFormData] = React.useState({
     name: '',
@@ -22,7 +28,7 @@ export default function Contact() {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [submitResult, setSubmitResult] = React.useState(null);
+  const [submitResult, setSubmitResult] = React.useState(null as SubmitResult | null);
 
   const handleChange = (e: FormChangeEvent) => {
     const { name, value } = e.target;
