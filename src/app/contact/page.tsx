@@ -2,6 +2,18 @@
 
 import React from 'react';
 
+// Custom event types to avoid React namespace issues
+interface FormChangeEvent {
+  target: {
+    name: string;
+    value: string;
+  };
+}
+
+interface FormSubmitEvent {
+  preventDefault: () => void;
+}
+
 export default function Contact() {
   const [formData, setFormData] = React.useState({
     name: '',
@@ -12,7 +24,7 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitResult, setSubmitResult] = React.useState(null);
 
-  const handleChange = (e) => {
+  const handleChange = (e: FormChangeEvent) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -20,7 +32,7 @@ export default function Contact() {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormSubmitEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     

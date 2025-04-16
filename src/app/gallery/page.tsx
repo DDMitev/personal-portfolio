@@ -30,6 +30,16 @@ interface Category {
   name: string;
 }
 
+// Define event types
+interface FormChangeEvent {
+  target: {
+    name: string;
+    value: string;
+    type: string;
+    checked?: boolean;
+  }
+}
+
 // Sample projects data
 const sampleProjects: Project[] = [
   {
@@ -209,12 +219,15 @@ export default function GalleryPage() {
       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
         if (isLightboxOpen) closeLightbox();
         if (showPasswordModal) setShowPasswordModal(false);
+        if (showProjectForm) setShowProjectForm(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isLightboxOpen, showPasswordModal]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isLightboxOpen, showPasswordModal, showProjectForm]);
 
   // Project form handlers
   const openProjectForm = (project: Project | null = null): void => {
@@ -244,29 +257,29 @@ export default function GalleryPage() {
     setShowProjectForm(true);
   };
 
-  const handleFormChange = (e): void => {
+  const handleFormChange = (e: FormChangeEvent): void => {
     const { name, value, type } = e.target;
     
     if (type === 'checkbox') {
-      setFormValues(prev => ({
+      setFormValues((prev: typeof formValues) => ({
         ...prev,
-        [name]: (e.target).checked
+        [name]: e.target.checked
       }));
     } else {
-      setFormValues(prev => ({
+      setFormValues((prev: typeof formValues) => ({
         ...prev,
         [name]: value
       }));
     }
   };
 
-  const handleTechInputChange = (e): void => {
+  const handleTechInputChange = (e: FormChangeEvent): void => {
     setTechInput(e.target.value);
   };
 
   const addTechnology = (): void => {
     if (techInput.trim() !== '' && !formValues.technologies.includes(techInput.trim())) {
-      setFormValues(prev => ({
+      setFormValues((prev: typeof formValues) => ({
         ...prev,
         technologies: [...prev.technologies, techInput.trim()]
       }));
@@ -274,10 +287,10 @@ export default function GalleryPage() {
     }
   };
 
-  const removeTechnology = (tech: string): void => {
-    setFormValues(prev => ({
+  const removeTechnology = (tech: string, index: number): void => {
+    setFormValues((prev: typeof formValues) => ({
       ...prev,
-      technologies: prev.technologies.filter(t => t !== tech)
+      technologies: prev.technologies.filter((t, i) => i !== index)
     }));
   };
 
@@ -339,7 +352,7 @@ export default function GalleryPage() {
     items.splice(result.destination.index, 0, reorderedItem);
     
     // Update the order property on each item
-    const updatedItems = items.map((item, index) => ({
+    const updatedItems = items.map((item: Project, index: number) => ({
       ...item,
       order: index + 1
     }));
@@ -374,6 +387,107 @@ export default function GalleryPage() {
         setFilteredProjects(reorderedProjects);
       }
     }
+  };
+
+  // Render projects in the gallery 
+  const renderProjects = () => {
+    return (
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="projects" isDropDisabled={!isAdmin}>
+          {(provided: DroppableProvided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {filteredProjects.map((project: Project, index: number) => (
+                <Draggable
+                  key={project.id}
+                  draggableId={project.id}
+                  index={index}
+                  isDragDisabled={!isAdmin}
+                >
+                  {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`card ${
+                        snapshot.isDragging ? 'opacity-70 scale-105' : ''
+                      }`}
+                      style={{
+                        ...provided.draggableProps.style,
+                      }}
+                    >
+                      {/* Project Image Placeholder */}
+                      <div className="h-48 bg-background-light relative rounded-t-xl -mt-6 -mx-6">
+                        <div className={`absolute inset-0 rounded-t-xl bg-opacity-20 ${parseInt(project.id) % 3 === 0 ? 'bg-primary' : parseInt(project.id) % 3 === 1 ? 'bg-secondary' : 'bg-accent'}`}></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-white">
+                          <span className="text-lg font-semibold">{project.title}</span>
+                        </div>
+                      </div>
+
+                      {/* Project Info */}
+                      <div className="mt-4">
+                        <h3 className="font-bold text-xl mb-2">{project.title}</h3>
+                        <p className="text-foreground-muted mb-4">
+                          {project.description.length > 120
+                            ? `${project.description.substring(0, 120)}...`
+                            : project.description}
+                        </p>
+
+                        {/* Technology Tags */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {project.technologies.slice(0, 3).map((tech, index) => (
+                            <span
+                              key={index}
+                              className={`tech-badge ${
+                                index % 3 === 0 ? 'badge-react' : index % 3 === 1 ? 'badge-ts' : 'badge-node'
+                              }`}
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Admin Controls */}
+                        <div className="flex justify-between items-center mt-4">
+                          <button
+                            onClick={() => openLightbox(project)}
+                            className="text-primary hover:text-primary-dark font-medium inline-flex items-center"
+                          >
+                            View Details <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                          </button>
+                          {isAdmin && (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => openProjectForm(project)}
+                                className="text-yellow-400 hover:text-yellow-300"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteProject(project.id)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    );
   };
 
   return (
@@ -448,98 +562,12 @@ export default function GalleryPage() {
 
         {/* Projects Grid with Drag & Drop in Admin Mode */}
         {isAdmin ? (
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="projects">
-              {(provided) => (
-                <div
-                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                >
-                  {filteredProjects.map((project, index) => (
-                    <Draggable key={project.id} draggableId={project.id} index={index}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={`card ${
-                            snapshot.isDragging ? 'opacity-70 scale-105' : ''
-                          }`}
-                          style={{
-                            ...provided.draggableProps.style,
-                          }}
-                        >
-                          {/* Project Image Placeholder */}
-                          <div className="h-48 bg-background-light relative rounded-t-xl -mt-6 -mx-6">
-                            <div className={`absolute inset-0 rounded-t-xl bg-opacity-20 ${parseInt(project.id) % 3 === 0 ? 'bg-primary' : parseInt(project.id) % 3 === 1 ? 'bg-secondary' : 'bg-accent'}`}></div>
-                            <div className="absolute inset-0 flex items-center justify-center text-white">
-                              <span className="text-lg font-semibold">{project.title}</span>
-                            </div>
-                          </div>
-
-                          {/* Project Info */}
-                          <div className="mt-4">
-                            <h3 className="font-bold text-xl mb-2">{project.title}</h3>
-                            <p className="text-foreground-muted mb-4">
-                              {project.description.length > 120
-                                ? `${project.description.substring(0, 120)}...`
-                                : project.description}
-                            </p>
-
-                            {/* Technology Tags */}
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {project.technologies.slice(0, 3).map((tech, index) => (
-                                <span
-                                  key={index}
-                                  className={`tech-badge ${
-                                    index % 3 === 0 ? 'badge-react' : index % 3 === 1 ? 'badge-ts' : 'badge-node'
-                                  }`}
-                                >
-                                  {tech}
-                                </span>
-                              ))}
-                            </div>
-
-                            {/* Admin Controls */}
-                            <div className="flex justify-between items-center mt-4">
-                              <button
-                                onClick={() => openProjectForm(project)}
-                                className="text-primary hover:text-primary-dark font-medium inline-flex items-center"
-                              >
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => deleteProject(project.id)}
-                                className="text-red-500 hover:text-red-700 font-medium inline-flex items-center"
-                              >
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+          renderProjects()
         ) : (
           // Regular projects grid for non-admin users
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className="card animate-fade-in"
-              >
+            {filteredProjects.map((project: Project) => (
+              <div key={project.id} className="card animate-fade-in">
                 {/* Project Image Placeholder */}
                 <div className="h-48 bg-background-light relative rounded-t-xl -mt-6 -mx-6">
                   <div className={`absolute inset-0 rounded-t-xl bg-opacity-20 ${parseInt(project.id) % 3 === 0 ? 'bg-primary' : parseInt(project.id) % 3 === 1 ? 'bg-secondary' : 'bg-accent'}`}></div>
@@ -559,7 +587,7 @@ export default function GalleryPage() {
 
                   {/* Technology Tags */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {project.technologies.slice(0, 3).map((tech, index) => (
+                    {project.technologies.slice(0, 3).map((tech: string, index: number) => (
                       <span
                         key={index}
                         className={`tech-badge ${
@@ -571,7 +599,8 @@ export default function GalleryPage() {
                     ))}
                   </div>
 
-                  <div className="flex justify-between items-center">
+                  {/* View Details Button */}
+                  <div className="flex justify-end mt-4">
                     <button
                       onClick={() => openLightbox(project)}
                       className="text-primary hover:text-primary-dark font-medium inline-flex items-center"
@@ -712,7 +741,7 @@ export default function GalleryPage() {
                       >
                         {tech}
                         <button
-                          onClick={() => removeTechnology(tech)}
+                          onClick={() => removeTechnology(tech, index)}
                           className="ml-1 text-red-500 hover:text-red-700"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
