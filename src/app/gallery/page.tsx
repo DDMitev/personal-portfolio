@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   DragDropContext, 
   Droppable, 
@@ -107,17 +107,17 @@ const categories: Category[] = [
 
 export default function GalleryPage() {
   // State variables
-  const [allProjects, setAllProjects] = useState<Project[]>(sampleProjects);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>(sampleProjects);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>('');
-  const [passwordError, setPasswordError] = useState<string>('');
-  const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
-  const [showProjectForm, setShowProjectForm] = useState<boolean>(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [allProjects, setAllProjects] = useState(sampleProjects as Project[]);
+  const [filteredProjects, setFilteredProjects] = useState(sampleProjects as Project[]);
+  const [selectedCategory, setSelectedCategory] = useState('all' as string);
+  const [isAdmin, setIsAdmin] = useState(false as boolean);
+  const [showPasswordModal, setShowPasswordModal] = useState(false as boolean);
+  const [password, setPassword] = useState('' as string);
+  const [passwordError, setPasswordError] = useState('' as string);
+  const [currentProject, setCurrentProject] = useState(null as Project | null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false as boolean);
+  const [showProjectForm, setShowProjectForm] = useState(false as boolean);
+  const [editingProject, setEditingProject] = useState(null as Project | null);
   const [formValues, setFormValues] = useState({
     title: '',
     description: '',
@@ -127,8 +127,8 @@ export default function GalleryPage() {
     liveUrl: '',
     featured: false
   });
-  const [techInput, setTechInput] = useState<string>('');
-  const [secretKeyInput, setSecretKeyInput] = useState<string>('');
+  const [techInput, setTechInput] = useState('' as string);
+  const [secretKeyInput, setSecretKeyInput] = useState('' as string);
 
   // Refs
   const modalRef = useRef<HTMLDivElement>(null);
