@@ -1,0 +1,723 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { DragDropContext, Droppable, Draggable, DropResult, DroppableProvided, DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd';
+import projects from '@/data/projects';
+import { ProjectItem } from '@/data/projects';
+
+const GalleryPage = () => {
+  const [filteredProjects, setFilteredProjects] = useState([...projects] as ProjectItem[]);
+  const [allProjects, setAllProjects] = useState([...projects] as ProjectItem[]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [currentProject, setCurrentProject] = useState<ProjectItem | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectItem | null>(null);
+  const [formValues, setFormValues] = useState<Partial<ProjectItem>>({
+    title: '',
+    description: '',
+    technologies: [],
+    projectType: 'web',
+    date: '',
+    githubUrl: '',
+    liveUrl: ''
+  });
+  const ADMIN_SECRET = "d3v2025"; // Stronger password in real implementation
+
+  // Categories for filtering
+  const categories = [
+    { id: 'all', name: 'All Projects' },
+    { id: 'web', name: 'Web Development' },
+    { id: 'mobile', name: 'Mobile Apps' },
+    { id: 'design', name: 'Design' }
+  ];
+
+  // Initialize filtered projects
+  useEffect(() => {
+    filterProjects(selectedCategory);
+  }, [allProjects, selectedCategory]);
+
+  // Keyboard shortcut for admin mode
+  useEffect(() => {
+    let keysPressed: Record<string, boolean> = {};
+    let secretPattern = '';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Record the key press
+      keysPressed[e.key] = true;
+      
+      // Check for Ctrl+Alt+A combination
+      if (keysPressed['Control'] && keysPressed['Alt'] && keysPressed['a']) {
+        e.preventDefault();
+        setShowPasswordModal(true);
+        keysPressed = {}; // Reset the keys
+      }
+      
+      // Handle specific key sequence (another option)
+      secretPattern += e.key;
+      
+      // Only keep the last 10 characters of the pattern to prevent memory issues
+      if (secretPattern.length > 10) {
+        secretPattern = secretPattern.substring(secretPattern.length - 10);
+      }
+      
+      // Check if the secret pattern is typed
+      if (secretPattern.endsWith('admindev')) {
+        setShowPasswordModal(true);
+        secretPattern = '';
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Remove the key from pressed keys
+      delete keysPressed[e.key];
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Filter projects by category
+  const filterProjects = (category: string) => {
+    setSelectedCategory(category);
+    if (category === 'all') {
+      setFilteredProjects([...allProjects]);
+    } else {
+      setFilteredProjects(allProjects.filter(project => project.projectType === category));
+    }
+  };
+
+  // Open project details in lightbox
+  const openLightbox = (project: ProjectItem) => {
+    setCurrentProject(project);
+    setIsLightboxOpen(true);
+  };
+
+  // Close lightbox
+  const closeLightbox = () => {
+    setIsLightboxOpen(false);
+    setCurrentProject(null);
+  };
+
+  // Verify admin password
+  const verifyPassword = () => {
+    if (adminPassword === ADMIN_SECRET) {
+      setIsAdmin(true);
+      setShowPasswordModal(false);
+      setAdminPassword("");
+      setPasswordError("");
+    } else {
+      setPasswordError("Invalid password");
+    }
+  };
+
+  // Exit admin mode
+  const exitAdminMode = () => {
+    setIsAdmin(false);
+  };
+
+  // Handle drag and drop reordering
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(allProjects);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    setAllProjects(items);
+    // If we would be saving to a backend, this is where we'd make that API call
+  };
+
+  // Add a new project
+  const addProject = () => {
+    setEditingProject(null);
+    setFormValues({
+      title: '',
+      description: '',
+      technologies: [],
+      projectType: 'web',
+      date: '',
+      githubUrl: '',
+      liveUrl: ''
+    });
+    setShowProjectForm(true);
+  };
+
+  // Edit an existing project
+  const editProject = (project: ProjectItem) => {
+    setEditingProject(project);
+    setFormValues({
+      title: project.title,
+      description: project.description,
+      technologies: project.technologies,
+      projectType: project.projectType,
+      date: project.date,
+      githubUrl: project.githubUrl || '',
+      liveUrl: project.liveUrl || ''
+    });
+    setShowProjectForm(true);
+  };
+
+  // Delete a project
+  const deleteProject = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      const updatedProjects = allProjects.filter(project => project.id !== id);
+      setAllProjects(updatedProjects);
+      // If we would be saving to a backend, this is where we'd make that API call
+    }
+  };
+
+  // Handle form changes
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle technologies input (comma-separated list)
+  const handleTechChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const techString = e.target.value;
+    const techArray = techString.split(',').map(tech => tech.trim()).filter(tech => tech !== '');
+    setFormValues(prev => ({ ...prev, technologies: techArray }));
+  };
+
+  // Save the project (add new or update existing)
+  const saveProject = () => {
+    if (!formValues.title || !formValues.description) {
+      alert('Title and description are required!');
+      return;
+    }
+
+    if (editingProject) {
+      // Update existing project
+      const updatedProjects = allProjects.map(project => 
+        project.id === editingProject.id 
+          ? { ...project, ...formValues } 
+          : project
+      );
+      setAllProjects(updatedProjects);
+    } else {
+      // Add new project
+      const newProject: ProjectItem = {
+        id: String(Date.now()), // Generate a unique ID
+        title: formValues.title || '',
+        description: formValues.description || '',
+        imageUrl: '/images/projects/placeholder.jpg', // Default placeholder
+        technologies: formValues.technologies || [],
+        projectType: (formValues.projectType as 'web' | 'mobile' | 'design' | 'other') || 'web',
+        date: formValues.date || new Date().toISOString().split('T')[0],
+        githubUrl: formValues.githubUrl,
+        liveUrl: formValues.liveUrl
+      };
+      setAllProjects([...allProjects, newProject]);
+    }
+
+    setShowProjectForm(false);
+    setEditingProject(null);
+    // If we would be saving to a backend, this is where we'd make that API call
+  };
+
+  return (
+    <main className="py-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-bold text-gradient-primary mb-4">Project Gallery</h1>
+          <p className="text-lg text-foreground-muted max-w-2xl mx-auto">
+            A showcase of my web development and design projects. 
+            Browse through my work and explore the technologies used.
+          </p>
+        </div>
+
+        {/* Category Filters */}
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => filterProjects(category.id)}
+              className={`px-6 py-2 rounded-full ${
+                selectedCategory === category.id
+                  ? 'bg-primary text-white'
+                  : 'bg-background-light text-foreground hover:bg-background-lighter'
+              } transition-colors duration-200 text-sm md:text-base font-medium`}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Admin Message */}
+        {isAdmin && (
+          <div className="bg-primary-bg border-l-4 border-primary p-4 mb-8 rounded-r-md">
+            <div className="flex justify-between items-center">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-primary-dark">
+                    Admin mode active. You can drag and drop projects to reorder them,
+                    add new projects, or remove existing ones.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={exitAdminMode}
+                className="text-sm text-primary hover:text-primary-dark px-3 py-1 rounded border border-primary-muted hover:bg-primary-bg"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Add Project Button (Admin only) */}
+        {isAdmin && (
+          <div className="flex justify-end mb-8">
+            <button
+              onClick={addProject}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 102 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Add New Project
+            </button>
+          </div>
+        )}
+
+        {/* Project Form Modal */}
+        {showProjectForm && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+            <div className="bg-background rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-semibold text-foreground mb-4">
+                {editingProject ? 'Edit Project' : 'Add New Project'}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Title*
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={formValues.title}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Project Type*
+                    </label>
+                    <select
+                      name="projectType"
+                      value={formValues.projectType}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="web">Web Development</option>
+                      <option value="mobile">Mobile App</option>
+                      <option value="design">Design</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={formValues.date}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Technologies (comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      name="technologies"
+                      value={formValues.technologies?.join(', ')}
+                      onChange={handleTechChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="React, TypeScript, Node.js"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Description*
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formValues.description}
+                      onChange={handleFormChange}
+                      rows={5}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      required
+                    ></textarea>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      GitHub URL
+                    </label>
+                    <input
+                      type="url"
+                      name="githubUrl"
+                      value={formValues.githubUrl}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="https://github.com/username/project"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-foreground-muted mb-1">
+                      Live URL
+                    </label>
+                    <input
+                      type="url"
+                      name="liveUrl"
+                      value={formValues.liveUrl}
+                      onChange={handleFormChange}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                      placeholder="https://yourproject.com"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowProjectForm(false)}
+                  className="px-4 py-2 text-sm font-medium text-foreground-muted bg-background hover:bg-background-lighter rounded-md border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveProject}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  {editingProject ? 'Update Project' : 'Add Project'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Projects Grid with Drag & Drop in Admin Mode */}
+        {isAdmin ? (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="projects">
+              {(provided: DroppableProvided) => (
+                <div 
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  {filteredProjects.map((project: ProjectItem, index: number) => (
+                    <Draggable key={project.id} draggableId={project.id} index={index}>
+                      {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={`bg-background rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105 ${
+                            snapshot.isDragging ? 'opacity-70 scale-105' : ''
+                          }`}
+                          style={{
+                            ...provided.draggableProps.style,
+                          }}
+                        >
+                          {/* Project Image Placeholder */}
+                          <div className="h-48 bg-gray-300 relative">
+                            <div className={`absolute inset-0 bg-${parseInt(project.id) % 3 === 0 ? 'blue' : parseInt(project.id) % 3 === 1 ? 'green' : 'purple'}-500 opacity-20`}></div>
+                            <div className="absolute inset-0 flex items-center justify-center text-white">
+                              <span className="text-lg font-semibold">{project.title}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Project Info */}
+                          <div className="p-6">
+                            <h3 className="font-bold text-xl mb-2">{project.title}</h3>
+                            <p className="text-foreground-muted mb-4">
+                              {project.description.length > 120 
+                                ? `${project.description.substring(0, 120)}...` 
+                                : project.description}
+                            </p>
+                            
+                            {/* Technology Tags */}
+                            <div className="flex flex-wrap gap-2 mb-4">
+                              {project.technologies.slice(0, 3).map((tech: string, index: number) => (
+                                <span 
+                                  key={index} 
+                                  className={`px-3 py-1 bg-${
+                                    index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'green' : 'purple'
+                                  }-100 text-${
+                                    index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'green' : 'purple'
+                                  }-800 rounded-full text-sm`}
+                                >
+                                  {tech}
+                                </span>
+                              ))}
+                            </div>
+                            
+                            {/* Admin Controls */}
+                            <div className="flex justify-between items-center mt-4">
+                              <button
+                                onClick={() => editProject(project)}
+                                className="text-blue-500 hover:text-blue-700 font-medium"
+                              >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteProject(project.id)}
+                                className="text-red-500 hover:text-red-700 font-medium"
+                              >
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        ) : (
+          // Regular projects grid for non-admin users
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProjects.map((project: ProjectItem) => (
+              <div 
+                key={project.id} 
+                className="bg-background rounded-lg overflow-hidden shadow-lg"
+              >
+                {/* Project Image Placeholder */}
+                <div className="h-48 bg-gray-300 relative">
+                  <div className={`absolute inset-0 bg-${parseInt(project.id) % 3 === 0 ? 'blue' : parseInt(project.id) % 3 === 1 ? 'green' : 'purple'}-500 opacity-20`}></div>
+                  <div className="absolute inset-0 flex items-center justify-center text-white">
+                    <span className="text-lg font-semibold">{project.title}</span>
+                  </div>
+                </div>
+                
+                {/* Project Info */}
+                <div className="p-6">
+                  <h3 className="font-bold text-xl mb-2">{project.title}</h3>
+                  <p className="text-foreground-muted mb-4">
+                    {project.description.length > 120 
+                      ? `${project.description.substring(0, 120)}...` 
+                      : project.description}
+                  </p>
+                  
+                  {/* Technology Tags */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {project.technologies.slice(0, 3).map((tech: string, index: number) => (
+                      <span 
+                        key={index} 
+                        className={`px-3 py-1 bg-${
+                          index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'green' : 'purple'
+                        }-100 text-${
+                          index % 3 === 0 ? 'blue' : index % 3 === 1 ? 'green' : 'purple'
+                        }-800 rounded-full text-sm`}
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <button
+                      onClick={() => openLightbox(project)}
+                      className="text-blue-500 hover:text-blue-700 font-medium"
+                    >
+                      View Details →
+                    </button>
+                    
+                    {/* Admin Controls */}
+                    {isAdmin && (
+                      <div className="flex space-x-2">
+                        <button className="p-1 text-gray-500 hover:text-gray-700">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button className="p-1 text-gray-500 hover:text-red-700">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Password Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+            <div className="bg-background-light rounded-lg shadow-xl p-6 w-80 max-w-md">
+              <h3 className="text-lg font-medium text-foreground mb-4">Admin Authentication</h3>
+              <div className="mb-4">
+                <label htmlFor="password" className="block text-sm font-medium text-foreground-muted mb-1">
+                  Enter password:
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="Password"
+                />
+                {passwordError && (
+                  <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+                )}
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setAdminPassword("");
+                    setPasswordError("");
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-foreground-muted bg-background hover:bg-background-lighter rounded-md border border-border"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={verifyPassword}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-dark rounded-md"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Lightbox/Modal (simplified version) */}
+        {isLightboxOpen && currentProject && (
+          <div className="fixed inset-0 z-50 overflow-y-auto">
+            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={closeLightbox}></div>
+              </div>
+              
+              <div className="inline-block align-bottom bg-background rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+                <div className="bg-background px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-2xl leading-6 font-bold text-foreground mb-4">{currentProject.title}</h3>
+                      
+                      {/* Project Image Placeholder */}
+                      <div className="h-64 bg-gray-200 mb-4 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-500">Project Screenshot</span>
+                      </div>
+                      
+                      <div className="mt-2">
+                        <p className="text-foreground-muted mb-4">{currentProject.description}</p>
+                        
+                        <div className="mb-4">
+                          <h4 className="text-lg font-semibold mb-2">Technologies Used</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {currentProject.technologies.map((tech: string, index: number) => (
+                              <span key={index} className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                                {tech}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <h4 className="text-lg font-semibold mb-2">Project Links</h4>
+                          <div className="flex gap-4">
+                            {currentProject.githubUrl && (
+                              <a 
+                                href={currentProject.githubUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-background hover:bg-background-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                              >
+                                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.68.92.68 1.85V19c0 .27.16.59.67.5C17.14 18.16 20 14.42 20 10A10 10 0 0010 0z" clipRule="evenodd" />
+                              </svg>
+                              GitHub Repository
+                            </a>
+                          )}
+                          
+                          {currentProject.liveUrl && (
+                            <a 
+                              href={currentProject.liveUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              View Live Project
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button 
+                    type="button" 
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-background text-base font-medium text-gray-700 hover:bg-background-lighter focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={closeLightbox}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+export default GalleryPage;

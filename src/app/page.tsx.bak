@@ -1,0 +1,207 @@
+import React from "react";
+import HeroSection from "@/components/home/HeroSection";
+import SkillsSection from "@/components/home/SkillsSection";
+import FeaturedProjects from "@/components/home/FeaturedProjects";
+import CtaSection from "@/components/home/CtaSection";
+import { projects } from "@/data/projects";
+import Image from "next/image";
+import Link from "next/link";
+
+export default function Home() {
+  return (
+    <div className="w-full">
+      {/* Hero Section */}
+      <section className="relative h-screen flex items-center">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900 to-purple-900 opacity-90 z-0"></div>
+        <div className="container mx-auto px-4 z-10 text-white">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">
+              Crafting Digital Experiences
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-light mb-8">
+              Full-Stack Developer & UI/UX Designer
+            </h2>
+            <p className="text-lg md:text-xl mb-8">
+              I build beautiful, functional websites and applications that deliver exceptional user experiences.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/gallery" className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center">
+                View My Work
+              </Link>
+              <Link href="/contact" className="bg-transparent border-2 border-white hover:bg-white hover:text-blue-900 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center">
+                Get In Touch
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Projects Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Featured Projects</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              A selection of my recent work. Each project represents a unique challenge and solution.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Project Card 1 */}
+            <div className="bg-white rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105">
+              <div className="h-48 bg-gray-300 relative">
+                <div className="absolute inset-0 bg-blue-500 opacity-20"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <span className="text-lg font-semibold">E-Commerce Platform</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-xl mb-2">E-Commerce Platform</h3>
+                <p className="text-gray-700 mb-4">
+                  A fully responsive e-commerce platform with user authentication, product filtering, and payment processing.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">React</span>
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Node.js</span>
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">MongoDB</span>
+                </div>
+                <Link href="/gallery" className="text-blue-500 hover:text-blue-700 font-medium">
+                  View Details →
+                </Link>
+              </div>
+            </div>
+
+            {/* Project Card 2 */}
+            <div className="bg-white rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105">
+              <div className="h-48 bg-gray-300 relative">
+                <div className="absolute inset-0 bg-green-500 opacity-20"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <span className="text-lg font-semibold">Task Management App</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-xl mb-2">Task Management App</h3>
+                <p className="text-gray-700 mb-4">
+                  A task management application with drag-and-drop functionality for organizing tasks by status.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">React</span>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">Firebase</span>
+                  <span className="px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm">Tailwind CSS</span>
+                </div>
+                <Link href="/gallery" className="text-blue-500 hover:text-blue-700 font-medium">
+                  View Details →
+                </Link>
+              </div>
+            </div>
+
+            {/* Project Card 3 */}
+            <div className="bg-white rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105">
+              <div className="h-48 bg-gray-300 relative">
+                <div className="absolute inset-0 bg-purple-500 opacity-20"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <span className="text-lg font-semibold">Weather Dashboard</span>
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="font-bold text-xl mb-2">Weather Dashboard</h3>
+                <p className="text-gray-700 mb-4">
+                  A weather dashboard that displays current and forecasted weather for multiple locations.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">JavaScript</span>
+                  <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">HTML/CSS</span>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">API</span>
+                </div>
+                <Link href="/gallery" className="text-blue-500 hover:text-blue-700 font-medium">
+                  View Details →
+                </Link>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-12">
+            <Link href="/gallery" className="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+              View All Projects
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Skills Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Skills & Expertise</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Technologies and methodologies I specialize in to create exceptional digital experiences.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            {/* Skill Card - Frontend */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+              <div className="bg-blue-100 text-blue-600 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-xl mb-2">Frontend</h3>
+              <p className="text-gray-600">React, Vue, JavaScript, TypeScript, HTML/CSS</p>
+            </div>
+
+            {/* Skill Card - Backend */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+              <div className="bg-green-100 text-green-600 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-xl mb-2">Backend</h3>
+              <p className="text-gray-600">Node.js, Express, Python, Django, RESTful APIs</p>
+            </div>
+
+            {/* Skill Card - Design */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+              <div className="bg-purple-100 text-purple-600 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-xl mb-2">Design</h3>
+              <p className="text-gray-600">UI/UX, Figma, Adobe XD, Responsive Design</p>
+            </div>
+
+            {/* Skill Card - Database */}
+            <div className="bg-white p-6 rounded-lg shadow-md text-center">
+              <div className="bg-yellow-100 text-yellow-600 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-xl mb-2">Database</h3>
+              <p className="text-gray-600">MongoDB, MySQL, PostgreSQL, Firebase</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="py-20 bg-blue-900 text-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Start Your Project?</h2>
+          <p className="text-xl mb-8 max-w-2xl mx-auto">
+            Let's collaborate to bring your ideas to life. I'm currently available for freelance work and new opportunities.
+          </p>
+          <Link href="/contact" className="inline-block bg-white text-blue-900 hover:bg-blue-100 font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+            Contact Me
+          </Link>
+        </div>
+      </section>
+      <HeroSection />
+      <SkillsSection />
+      <FeaturedProjects projects={projects} />
+      <CtaSection />
+    </div>
+  );
+}
