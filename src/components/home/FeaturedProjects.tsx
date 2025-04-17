@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ProjectItem } from '@/data/projects';
 
@@ -8,9 +8,50 @@ interface FeaturedProjectsProps {
   projects?: ProjectItem[];
 }
 
+// Gallery Project type matches the structure in gallery/page.tsx
+interface GalleryProject {
+  id: string;
+  title: string;
+  description: string;
+  projectType: string;
+  technologies: string[];
+  githubUrl?: string;
+  liveUrl?: string;
+  featured: boolean;
+  order: number;
+}
+
 const FeaturedProjects = ({ projects = [] }: FeaturedProjectsProps) => {
-  // Get the first 3 projects to feature
-  const featuredProjects = projects.slice(0, 3);
+  const [featuredProjects, setFeaturedProjects] = useState([] as GalleryProject[]);
+  
+  // Load projects from localStorage (where gallery projects are stored)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // Try to get projects from localStorage where gallery stores them
+        const savedProjects = localStorage.getItem('portfolio-projects');
+        
+        if (savedProjects) {
+          const parsedProjects = JSON.parse(savedProjects) as GalleryProject[];
+          // Filter to only show featured projects and sort by order
+          const featured = parsedProjects
+            .filter(project => project.featured)
+            .sort((a, b) => a.order - b.order)
+            .slice(0, 3); // Take up to 3 featured projects
+          
+          setFeaturedProjects(featured);
+        } else {
+          // Fallback to static projects if none in localStorage
+          const staticFeatured = projects.slice(0, 3);
+          setFeaturedProjects(staticFeatured as unknown as GalleryProject[]);
+        }
+      } catch (error) {
+        console.error('Error loading projects:', error);
+        // Fallback to static projects on error
+        setFeaturedProjects(projects.slice(0, 3) as unknown as GalleryProject[]);
+      }
+    }
+  }, [projects]);
 
   return (
     <section className="py-20 relative">
@@ -74,7 +115,7 @@ const FeaturedProjects = ({ projects = [] }: FeaturedProjectsProps) => {
             ))
           ) : (
             <div className="col-span-3 text-center p-8">
-              <p className="text-foreground-muted">No projects found. Visit the gallery to see all projects.</p>
+              <p className="text-foreground-muted">No featured projects found. Visit the gallery to mark projects as featured.</p>
             </div>
           )}
         </div>
