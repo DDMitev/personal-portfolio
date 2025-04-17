@@ -60,6 +60,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/services" className="text-foreground-muted hover:text-primary transition-all flex items-center">
+                  <span className="w-1 h-1 bg-primary rounded-full mr-2"></span>
+                  Services
+                </Link>
+              </li>
+              <li>
                 <Link href="/about" className="text-foreground-muted hover:text-primary transition-all flex items-center">
                   <span className="w-1 h-1 bg-primary rounded-full mr-2"></span>
                   About
@@ -113,8 +119,8 @@ const Footer = () => {
               </a>
             </div>
             <p className="text-sm text-foreground-muted">
-              Email: <a href="mailto:contact@example.com" className="text-primary hover:text-primary-dark transition-colors">
-                contact@example.com
+              Email: <a href="mailto:mitevmatey@gmail.com" className="text-primary hover:text-primary-dark transition-colors">
+                mitevmatey@gmail.com
               </a>
             </p>
           </div>
