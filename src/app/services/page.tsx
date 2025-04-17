@@ -62,32 +62,42 @@ const sampleServices: Service[] = [
   {
     id: '1',
     title: 'Web Development',
-    description: 'Custom website development using modern frameworks',
+    description: 'End‑to‑end website and web‑app development using modern frameworks (React, Node.js, Django), responsive layouts, and CMS integration. Includes testing and deployment.',
     rate: '$75/hour',
-    duration: 'Varies by project',
-    availability: 'Available',
+    duration: '4–8 weeks (small‑scale); 12–16 weeks (enterprise)',
+    availability: 'Limited (10 hrs/week)',
     category: 'development',
     order: 1
   },
   {
     id: '2',
     title: 'UI/UX Design',
-    description: 'User interface and experience design for applications',
+    description: 'User research, wireframing, high‑fidelity mockups and interactive prototypes. Focus on accessibility (WCAG 2.1) and conversion‑optimized interfaces.',
     rate: '$65/hour',
-    duration: '2-3 weeks',
-    availability: 'Limited',
+    duration: '2–4 weeks',
+    availability: 'Available',
     category: 'design',
     order: 2
   },
   {
     id: '3',
     title: 'Technical Consulting',
-    description: 'Expert advice on technical solutions and architecture',
+    description: 'Architecture reviews, performance audits, DevOps strategy, and technology road‑mapping. Includes a final report with prioritized recommendations.',
     rate: '$90/hour',
-    duration: 'As needed',
+    duration: '1–2 weeks',
     availability: 'Available',
     category: 'consulting',
     order: 3
+  },
+  {
+    id: '4',
+    title: 'SEO & Digital Marketing',
+    description: 'On‑page/off‑page SEO audits, keyword strategy, content optimization, and paid‑media campaign setup (Google Ads, social).',
+    rate: '$60/hour or $2,500/project',
+    duration: '4–6 weeks',
+    availability: 'Available',
+    category: 'consulting',
+    order: 4
   }
 ];
 
