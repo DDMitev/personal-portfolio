@@ -153,7 +153,8 @@ export default function Contact() {
             
             <div className="mt-8 text-center">
               <p>You can also reach me directly at:</p>
-              <a href="mailto:deyanmitev05@gmail.com" className="text-blue-400 hover:underline">deyanmitev05@gmail.com</a>
+              <a href="mailto:mitevmatey@gmail.com" className="text-blue-400 hover:underline">mitevmatey@gmail.com</a>
+              <p className="mt-2">Based in Eindhoven, Netherlands</p>
             </div>
           </form>
         )}
