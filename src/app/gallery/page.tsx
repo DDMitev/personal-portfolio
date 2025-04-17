@@ -48,8 +48,8 @@ interface MouseClickEvent {
 const sampleProjects: Project[] = [
   {
     id: '1',
-    title: 'E-Commerce Platform',
-    description: 'A full-stack e-commerce platform built with Next.js, featuring a responsive design, product catalog, shopping cart, and secure checkout.',
+    title: 'E-Commerce Website',
+    description: 'A fully responsive e-commerce website built with Next.js and React, featuring product filtering, shopping cart, and Stripe integration for secure payments. Includes admin dashboard for inventory management.',
     projectType: 'web',
     technologies: ['Next.js', 'React', 'Node.js', 'MongoDB', 'Stripe'],
     githubUrl: 'https://github.com/username/ecommerce-platform',
@@ -59,53 +59,52 @@ const sampleProjects: Project[] = [
   },
   {
     id: '2',
-    title: 'Task Management App',
-    description: 'A task management application with drag-and-drop functionality, user authentication, and real-time updates.',
-    projectType: 'web',
-    technologies: ['React', 'Firebase', 'Tailwind CSS'],
-    githubUrl: 'https://github.com/username/task-management',
+    title: 'Corporate Website Redesign',
+    description: 'Complete UI/UX redesign for a financial services company, focusing on user experience improvements and WCAG 2.1 accessibility compliance. Resulted in 45% increase in conversion rate.',
+    projectType: 'design',
+    technologies: ['Figma', 'Adobe XD', 'WCAG 2.1', 'User Testing'],
+    githubUrl: 'https://github.com/username/finance-ux-redesign',
+    liveUrl: 'https://finance-company.example.com',
     featured: true,
     order: 2
   },
   {
     id: '3',
-    title: 'Machine Learning Model',
-    description: 'A machine learning model for image classification using TensorFlow, achieving 95% accuracy on the test dataset.',
-    projectType: 'ai',
-    technologies: ['Python', 'TensorFlow', 'Scikit-learn', 'Jupyter Notebook'],
-    githubUrl: 'https://github.com/username/image-classification-model',
+    title: 'SaaS Dashboard',
+    description: 'Interactive dashboard for a SaaS platform with real-time data visualization, user management, and subscription analytics. Built with a focus on performance optimization.',
+    projectType: 'web',
+    technologies: ['Vue.js', 'D3.js', 'Express', 'PostgreSQL'],
+    githubUrl: 'https://github.com/username/saas-dashboard',
     featured: false,
     order: 3
   },
   {
     id: '4',
-    title: 'Mobile Fitness Tracker',
-    description: 'A cross-platform mobile app that tracks workouts, provides analytics, and offers personalized recommendations.',
-    projectType: 'mobile',
-    technologies: ['React Native', 'Redux', 'Firebase'],
-    githubUrl: 'https://github.com/username/fitness-tracker',
-    liveUrl: 'https://play.google.com/store/apps/fitness-tracker',
-    featured: false,
+    title: 'Technical Architecture Overhaul',
+    description: 'Conducted a complete architecture review and implementation for a healthcare startup, migrating from monolithic to microservices architecture. Reduced server costs by 35% and improved response times by 60%.',
+    projectType: 'consulting',
+    technologies: ['System Design', 'Docker', 'Kubernetes', 'AWS'],
+    githubUrl: 'https://github.com/username/healthcare-architecture',
+    featured: true,
     order: 4
   },
   {
     id: '5',
-    title: 'Weather Dashboard',
-    description: 'A weather dashboard that visualizes forecast data from multiple sources, offering detailed insights and historical comparisons.',
-    projectType: 'web',
-    technologies: ['JavaScript', 'D3.js', 'API Integration'],
-    githubUrl: 'https://github.com/username/weather-dashboard',
-    liveUrl: 'https://weather-dashboard.example.com',
+    title: 'SEO & Content Strategy',
+    description: 'Comprehensive SEO audit and content strategy for an e-learning platform. Implemented technical SEO improvements and content optimization that resulted in 250% increase in organic traffic within 6 months.',
+    projectType: 'marketing',
+    technologies: ['SEO', 'Content Strategy', 'Google Analytics', 'Keyword Research'],
+    liveUrl: 'https://learning-platform.example.com',
     featured: true,
     order: 5
   },
   {
     id: '6',
-    title: 'Neural Network Research',
-    description: 'Research on improving neural network efficiency for edge computing applications, reducing model size while maintaining accuracy.',
-    projectType: 'ai',
-    technologies: ['Python', 'PyTorch', 'Research Methodology'],
-    githubUrl: 'https://github.com/username/neural-network-research',
+    title: 'Mobile App UI Kit',
+    description: 'Designed and developed a comprehensive mobile UI component library with over 200 reusable components following atomic design principles. Includes dark mode support and accessibility features.',
+    projectType: 'design',
+    technologies: ['React Native', 'Storybook', 'Styled Components', 'Accessibility'],
+    githubUrl: 'https://github.com/username/mobile-ui-kit',
     featured: false,
     order: 6
   }
@@ -115,8 +114,9 @@ const sampleProjects: Project[] = [
 const categories: Category[] = [
   { id: 'all', name: 'All Projects' },
   { id: 'web', name: 'Web Development' },
-  { id: 'mobile', name: 'Mobile Apps' },
-  { id: 'ai', name: 'AI & ML' }
+  { id: 'design', name: 'UI/UX Design' },
+  { id: 'consulting', name: 'Technical Consulting' },
+  { id: 'marketing', name: 'SEO & Marketing' }
 ];
 
 export default function GalleryPage() {
@@ -705,10 +705,9 @@ export default function GalleryPage() {
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 bg-background-light border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                   >
-                    <option value="web">Web Development</option>
-                    <option value="mobile">Mobile App</option>
-                    <option value="ai">AI & ML</option>
-                    <option value="other">Other</option>
+                    {categories.filter(category => category.id !== 'all').map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
                   </select>
                 </div>
 
