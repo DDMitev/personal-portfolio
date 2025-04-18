@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { loadServices, saveServices, addService, updateService, deleteService as removeService } from '@/utils/serviceStorage';
 
 // Type definitions
 interface Service {
@@ -111,6 +112,7 @@ const serviceCategories = [
 
 export default function Services() {
   // State
+  const [isLoading, setIsLoading] = useState(true);
   const [allServices, setAllServices] = useState(sampleServices);
   const [filteredServices, setFilteredServices] = useState(sampleServices);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -129,6 +131,28 @@ export default function Services() {
   });
   const [secretPattern, setSecretPattern] = useState('');
   const [secretKeyInput, setSecretKeyInput] = useState('');
+
+  // Load services from localStorage when component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedServices = loadServices();
+        console.log('Loaded services from localStorage:', storedServices);
+        setAllServices(storedServices);
+        
+        // Update filtered services based on active category
+        if (activeCategory === 'all') {
+          setFilteredServices(storedServices);
+        } else {
+          setFilteredServices(storedServices.filter(service => service.category === activeCategory));
+        }
+      } catch (error) {
+        console.error('Error loading services:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   // Admin access through typing "admindev"
   useEffect(() => {
@@ -194,18 +218,16 @@ export default function Services() {
     // Update service order
     const updatedItems = items.map((item, index) => {
       return {
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        rate: item.rate,
-        duration: item.duration,
-        availability: item.availability,
-        category: item.category,
+        ...item,
         order: index + 1
       };
     });
     
+    // Update state
     setAllServices(updatedItems);
+    
+    // Save to localStorage
+    saveServices(updatedItems);
   };
 
   // Form handlers
@@ -264,21 +286,31 @@ export default function Services() {
 
     if (editingService) {
       // Update existing service
+      const updatedService = {
+        ...editingService,
+        title: formValues.title,
+        description: formValues.description,
+        rate: formValues.rate,
+        duration: formValues.duration,
+        availability: formValues.availability,
+        category: formValues.category
+      };
+      
+      // Save to utility
+      updateService(editingService.id, updatedService);
+      
+      // Update state
       const updatedServices = allServices.map(service => 
-        service.id === editingService.id 
-          ? { 
-              id: service.id,
-              title: formValues.title,
-              description: formValues.description,
-              rate: formValues.rate,
-              duration: formValues.duration,
-              availability: formValues.availability,
-              category: formValues.category,
-              order: service.order
-            } 
-          : service
+        service.id === editingService.id ? updatedService : service
       );
       setAllServices(updatedServices);
+      
+      // Update filtered services
+      if (activeCategory === 'all') {
+        setFilteredServices(updatedServices);
+      } else {
+        setFilteredServices(updatedServices.filter(service => service.category === activeCategory));
+      }
     } else {
       // Add new service
       const newService: Service = {
@@ -291,7 +323,20 @@ export default function Services() {
         category: formValues.category,
         order: allServices.length + 1
       };
-      setAllServices([...allServices, newService]);
+      
+      // Save to utility
+      addService(newService);
+      
+      // Update state
+      const updatedServices = [...allServices, newService];
+      setAllServices(updatedServices);
+      
+      // Update filtered services
+      if (activeCategory === 'all') {
+        setFilteredServices(updatedServices);
+      } else {
+        setFilteredServices(updatedServices.filter(service => service.category === activeCategory));
+      }
     }
 
     // Reset form
@@ -301,7 +346,44 @@ export default function Services() {
 
   const deleteService = (id: string): void => {
     if (window.confirm('Are you sure you want to delete this service?')) {
-      setAllServices(allServices.filter(service => service.id !== id));
+      // Delete from localStorage using our utility
+      removeService(id);
+      
+      // Update local state
+      const updatedServices = allServices.filter(service => service.id !== id);
+      
+      // Re-number services for consistency
+      const reorderedServices = updatedServices.map((service, index) => ({
+        ...service,
+        order: index + 1
+      }));
+      
+      setAllServices(reorderedServices);
+      
+      // Update filtered services
+      if (activeCategory === 'all') {
+        setFilteredServices(reorderedServices);
+      } else {
+        setFilteredServices(reorderedServices.filter(service => service.category === activeCategory));
+      }
+    }
+  };
+
+  // Force save all services to localStorage
+  const forceSaveServices = (): void => {
+    if (typeof window !== 'undefined') {
+      try {
+        const success = saveServices(allServices);
+        if (success) {
+          alert('Services saved successfully!');
+          console.log('Services force-saved to localStorage:', allServices);
+        } else {
+          alert('Error saving services. Check console for details.');
+        }
+      } catch (error) {
+        console.error('Error saving services to localStorage:', error);
+        alert('Error saving services: ' + (error as Error).message);
+      }
     }
   };
 
@@ -434,11 +516,38 @@ export default function Services() {
               </svg>
               Add New Service
             </button>
+            <button
+              onClick={forceSaveServices}
+              className="btn btn-primary ml-4"
+            >
+              Force Save Services
+            </button>
           </div>
         )}
 
         {/* Services Grid */}
-        {renderServices()}
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="card animate-pulse">
+                <div className="p-6">
+                  <div className="h-6 bg-background-light rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-background-light rounded w-full mb-2"></div>
+                  <div className="h-4 bg-background-light rounded w-5/6 mb-4"></div>
+                  
+                  {/* Skeleton table */}
+                  <div className="w-full mb-4">
+                    <div className="h-8 bg-background-light rounded w-full mb-2"></div>
+                    <div className="h-8 bg-background-light rounded w-full mb-2"></div>
+                    <div className="h-8 bg-background-light rounded w-full"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderServices()
+        )}
 
         {/* Admin Password Modal */}
         {showPasswordModal && (
