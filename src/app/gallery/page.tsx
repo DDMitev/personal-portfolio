@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  DragDropContext, 
-  Droppable, 
-  Draggable,
-  DropResult,
-  DroppableProvided,
-  DraggableProvided,
-  DraggableStateSnapshot 
-} from 'react-beautiful-dnd';
+import { useState, useEffect, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import Link from 'next/link';
+import { loadProjects, saveProjects, addProject, updateProject, deleteProject as removeProject } from '@/utils/projectStorage';
 
 // Define types
+type FormChangeEvent = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>;
+type MouseClickEvent = React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>;
+
 interface Project {
   id: string;
   title: string;
@@ -28,20 +25,6 @@ interface Project {
 interface Category {
   id: string;
   name: string;
-}
-
-// Define event types
-interface FormChangeEvent {
-  target: {
-    name: string;
-    value: string;
-    type?: string;
-    checked?: boolean;
-  }
-}
-
-interface MouseClickEvent {
-  preventDefault: () => void;
 }
 
 // Sample projects data
@@ -123,28 +106,29 @@ const categories: Category[] = [
 
 export default function GalleryPage() {
   // State variables
-  const [allProjects, setAllProjects] = useState(sampleProjects as Project[]);
-  const [filteredProjects, setFilteredProjects] = useState(sampleProjects as Project[]);
-  const [selectedCategory, setSelectedCategory] = useState('all' as string);
-  const [isAdmin, setIsAdmin] = useState(false as boolean);
-  const [showPasswordModal, setShowPasswordModal] = useState(false as boolean);
-  const [password, setPassword] = useState('' as string);
-  const [passwordError, setPasswordError] = useState('' as string);
-  const [currentProject, setCurrentProject] = useState(null as Project | null);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false as boolean);
-  const [showProjectForm, setShowProjectForm] = useState(false as boolean);
-  const [editingProject, setEditingProject] = useState(null as Project | null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [allProjects, setAllProjects] = useState(sampleProjects);
+  const [filteredProjects, setFilteredProjects] = useState(allProjects);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [currentProject, setCurrentProject] = useState(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
   const [formValues, setFormValues] = useState({
     title: '',
     description: '',
     projectType: 'web',
-    technologies: [] as string[],
+    technologies: [],
     githubUrl: '',
     liveUrl: '',
     featured: false
   });
-  const [techInput, setTechInput] = useState('' as string);
-  const [secretKeyInput, setSecretKeyInput] = useState('' as string);
+  const [techInput, setTechInput] = useState('');
+  const [secretKeyInput, setSecretKeyInput] = useState('');
 
   // Refs
   const modalRef = useRef(null);
@@ -154,7 +138,7 @@ export default function GalleryPage() {
     let buffer = '';
     const secretCode = 'admindev';
 
-    const handleKeyPress = (e: KeyboardEvent) => {
+    const handleKeyPress = (e) => {
       buffer += e.key.toLowerCase();
 
       // Keep only the last n characters where n is the length of the secret code
@@ -185,8 +169,37 @@ export default function GalleryPage() {
     }
   }, []);
 
+  // Load projects from localStorage when component mounts (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedProjects = loadProjects();
+      console.log('Loading from localStorage:', storedProjects);
+      setAllProjects(storedProjects);
+      filterProjects(selectedCategory, storedProjects);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Add a function to force save all projects to localStorage
+  const forceSaveProjects = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const success = saveProjects(allProjects);
+        if (success) {
+          alert('Projects saved successfully!');
+          console.log('Projects force-saved to localStorage:', allProjects);
+        } else {
+          alert('Error saving projects. Please check console for details.');
+        }
+      } catch (error) {
+        console.error('Error saving projects to localStorage:', error);
+        alert('Error saving projects: ' + error.message);
+      }
+    }
+  };
+
   // Check the password
-  const checkPassword = (): void => {
+  const checkPassword = () => {
     const validPasswords = ['d3v2025', 'admin', 'dev2025']; // Multiple valid passwords
     if (validPasswords.includes(password)) {
       setIsAdmin(true);
@@ -199,30 +212,37 @@ export default function GalleryPage() {
   };
 
   // Filter projects by category
-  const filterProjects = (category: string): void => {
+  const filterProjects = (category, projectsToFilter = null) => {
     setSelectedCategory(category);
+    const projects = projectsToFilter || allProjects;
+    
+    if (!projects) {
+      setFilteredProjects([]);
+      return;
+    }
+    
     if (category === 'all') {
-      setFilteredProjects([...allProjects]);
+      setFilteredProjects([...projects]);
     } else {
-      setFilteredProjects(allProjects.filter(project => project.projectType === category));
+      setFilteredProjects(projects.filter(project => project.projectType === category));
     }
   };
 
   // Project detail lightbox functions
-  const openLightbox = (project: Project): void => {
+  const openLightbox = (project) => {
     setCurrentProject(project);
     setIsLightboxOpen(true);
   };
 
-  const closeLightbox = (): void => {
+  const closeLightbox = () => {
     setIsLightboxOpen(false);
     setCurrentProject(null);
   };
 
   // Click away handler for modals
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
         if (isLightboxOpen) closeLightbox();
         if (showPasswordModal) setShowPasswordModal(false);
         if (showProjectForm) setShowProjectForm(false);
@@ -236,7 +256,7 @@ export default function GalleryPage() {
   }, [isLightboxOpen, showPasswordModal, showProjectForm]);
 
   // Project form handlers
-  const openProjectForm = (project: Project | null = null): void => {
+  const openProjectForm = (project = null) => {
     if (project) {
       setEditingProject(project);
       setFormValues({
@@ -264,34 +284,34 @@ export default function GalleryPage() {
   };
 
   // Overload for MouseEvent compatibility
-  const handleOpenProjectForm = (e: MouseClickEvent): void => {
+  const handleOpenProjectForm = (e) => {
     e.preventDefault();
     openProjectForm();
   };
 
-  const handleFormChange = (e: FormChangeEvent): void => {
+  const handleFormChange = (e) => {
     const { name, value, type } = e.target;
     
     if (type === 'checkbox') {
-      setFormValues((prev: typeof formValues) => ({
+      setFormValues((prev) => ({
         ...prev,
         [name]: e.target.checked
       }));
     } else {
-      setFormValues((prev: typeof formValues) => ({
+      setFormValues((prev) => ({
         ...prev,
         [name]: value
       }));
     }
   };
 
-  const handleTechInputChange = (e: FormChangeEvent): void => {
+  const handleTechInputChange = (e) => {
     setTechInput(e.target.value);
   };
 
-  const addTechnology = (): void => {
+  const addTechnology = () => {
     if (techInput.trim() !== '' && !formValues.technologies.includes(techInput.trim())) {
-      setFormValues((prev: typeof formValues) => ({
+      setFormValues((prev) => ({
         ...prev,
         technologies: [...prev.technologies, techInput.trim()]
       }));
@@ -299,40 +319,45 @@ export default function GalleryPage() {
     }
   };
 
-  const removeTechnology = (tech: string, index: number): void => {
-    setFormValues((prev: typeof formValues) => ({
+  const removeTechnology = (tech, index) => {
+    setFormValues((prev) => ({
       ...prev,
       technologies: prev.technologies.filter((t, i) => i !== index)
     }));
   };
 
-  const saveProject = (): void => {
+  const saveProject = () => {
     if (!formValues.title || !formValues.description || formValues.technologies.length === 0) {
       return; // Validation failed
     }
 
     if (editingProject) {
       // Update existing project
+      const updatedProject = {
+        ...editingProject,
+        title: formValues.title,
+        description: formValues.description,
+        projectType: formValues.projectType,
+        technologies: [...formValues.technologies],
+        githubUrl: formValues.githubUrl || undefined,
+        liveUrl: formValues.liveUrl || undefined,
+        featured: formValues.featured
+      };
+      
+      // Use our utility to update the project
+      updateProject(editingProject.id, updatedProject);
+      
+      // Update local state
       const updatedProjects = allProjects.map(project =>
-        project.id === editingProject.id
-          ? {
-              ...project,
-              title: formValues.title,
-              description: formValues.description,
-              projectType: formValues.projectType,
-              technologies: [...formValues.technologies],
-              githubUrl: formValues.githubUrl || undefined,
-              liveUrl: formValues.liveUrl || undefined,
-              featured: formValues.featured
-            }
-          : project
+        project.id === editingProject.id ? updatedProject : project
       );
       setAllProjects(updatedProjects);
-      // Update filtered projects as well
-      filterProjects(selectedCategory);
+      
+      // Update filtered projects
+      filterProjects(selectedCategory, updatedProjects);
     } else {
       // Add new project
-      const newProject: Project = {
+      const newProject = {
         id: Date.now().toString(),
         title: formValues.title,
         description: formValues.description,
@@ -344,10 +369,15 @@ export default function GalleryPage() {
         order: allProjects.length + 1
       };
 
+      // Use our utility to add the project
+      addProject(newProject);
+      
+      // Update local state
       const updatedProjects = [...allProjects, newProject];
       setAllProjects(updatedProjects);
-      // Update filtered projects based on current filter
-      filterProjects(selectedCategory);
+      
+      // Update filtered projects
+      filterProjects(selectedCategory, updatedProjects);
     }
 
     // Reset form and close it
@@ -356,35 +386,39 @@ export default function GalleryPage() {
   };
 
   // Drag and drop handler for admin mode project reordering
-  const handleDragEnd = (result: DropResult): void => {
+  const handleDragEnd = (result) => {
     if (!result.destination) return;
     
-    const items = Array.from(allProjects);
+    const items = Array.from(allProjects) as Project[];
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     
     // Update the order property on each item
-    const updatedItems = items.map((item: Project, index: number) => ({
+    const updatedItems = items.map((item, index) => ({
       ...item,
       order: index + 1
     }));
     
+    // Update local state
     setAllProjects(updatedItems);
     
+    // Save to localStorage using our utility
+    saveProjects(updatedItems);
+    
     // Update filtered projects if needed
-    if (selectedCategory !== 'all') {
-      filterProjects(selectedCategory);
-    } else {
-      setFilteredProjects(updatedItems);
-    }
+    filterProjects(selectedCategory, updatedItems);
   };
 
   // Delete project handler
-  const deleteProject = (id: string): void => {
+  const deleteProject = (id) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
+      // Use our utility to delete the project
+      removeProject(id);
+      
+      // Update local state
       const updatedProjects = allProjects.filter(project => project.id !== id);
       
-      // Re-number remaining projects
+      // Re-number remaining projects for local state
       const reorderedProjects = updatedProjects.map((project, index) => ({
         ...project,
         order: index + 1
@@ -393,11 +427,7 @@ export default function GalleryPage() {
       setAllProjects(reorderedProjects);
       
       // Update filtered projects
-      if (selectedCategory !== 'all') {
-        filterProjects(selectedCategory);
-      } else {
-        setFilteredProjects(reorderedProjects);
-      }
+      filterProjects(selectedCategory, reorderedProjects);
     }
   };
 
@@ -406,20 +436,20 @@ export default function GalleryPage() {
     return (
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="projects" isDropDisabled={!isAdmin}>
-          {(provided: DroppableProvided) => (
+          {(provided) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {filteredProjects.map((project: Project, index: number) => (
+              {filteredProjects.map((project, index) => (
                 <Draggable
                   key={project.id}
                   draggableId={project.id}
                   index={index}
                   isDragDisabled={!isAdmin}
                 >
-                  {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
+                  {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
@@ -504,130 +534,145 @@ export default function GalleryPage() {
 
   return (
     <main className="py-16 px-4 sm:px-6 lg:px-8 bg-background text-foreground">
-      <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold heading-gradient mb-4">Project Gallery</h1>
-          <p className="text-lg text-foreground-muted max-w-2xl mx-auto mb-8">
-            Explore my portfolio of projects. Each project represents my skills, passion, and creativity.
-          </p>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-screen">
+          <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S16.627 6 12 6z"></path>
+          </svg>
         </div>
+      ) : (
+        <div className="max-w-7xl mx-auto">
+          {/* Page Header */}
+          <div className="text-center mb-16">
+            <h1 className="text-4xl font-bold heading-gradient mb-4">Project Gallery</h1>
+            <p className="text-lg text-foreground-muted max-w-2xl mx-auto mb-8">
+              Explore my portfolio of projects. Each project represents my skills, passion, and creativity.
+            </p>
+          </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => filterProjects(category.id)}
-              className={`px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base font-medium ${
-                selectedCategory === category.id
-                  ? 'bg-primary text-white'
-                  : 'bg-background-light text-foreground hover:bg-background-light'
-              }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Admin Message */}
-        {isAdmin && (
-          <div className="card mb-8 border-l-4 border-primary">
-            <div className="flex justify-between items-center">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-foreground">
-                    Admin mode active. You can drag and drop projects to reorder them,
-                    add new projects, or remove existing ones.
-                  </p>
-                </div>
-              </div>
+          {/* Category Filters */}
+          <div className="flex flex-wrap justify-center gap-4 mb-12">
+            {categories.map((category) => (
               <button
-                onClick={() => setIsAdmin(false)}
-                className="btn btn-outline text-sm"
+                key={category.id}
+                onClick={() => filterProjects(category.id)}
+                className={`px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base font-medium ${
+                  selectedCategory === category.id
+                    ? 'bg-primary text-white'
+                    : 'bg-background-light text-foreground hover:bg-background-light'
+                }`}
               >
-                Exit
+                {category.name}
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Add Project Button (Admin only) */}
-        {isAdmin && (
-          <div className="flex justify-end mb-8">
-            <button
-              onClick={handleOpenProjectForm}
-              className="btn btn-primary"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 002 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              Add New Project
-            </button>
-          </div>
-        )}
-
-        {/* Projects Grid with Drag & Drop in Admin Mode */}
-        {isAdmin ? (
-          renderProjects()
-        ) : (
-          // Regular projects grid for non-admin users
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((project: Project) => (
-              <div key={project.id} className="card animate-fade-in">
-                {/* Project Image Placeholder */}
-                <div className="h-48 bg-background-light relative rounded-t-xl -mt-6 -mx-6">
-                  <div className={`absolute inset-0 rounded-t-xl bg-opacity-20 ${parseInt(project.id) % 3 === 0 ? 'bg-primary' : parseInt(project.id) % 3 === 1 ? 'bg-secondary' : 'bg-accent'}`}></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-white">
-                    <span className="text-lg font-semibold">{project.title}</span>
-                  </div>
-                </div>
-
-                {/* Project Info */}
-                <div className="mt-4">
-                  <h3 className="font-bold text-xl mb-2">{project.title}</h3>
-                  <p className="text-foreground-muted mb-4">
-                    {project.description.length > 120
-                      ? `${project.description.substring(0, 120)}...`
-                      : project.description}
-                  </p>
-
-                  {/* Technology Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.technologies.slice(0, 3).map((tech: string, index: number) => (
-                      <span
-                        key={index}
-                        className={`tech-badge ${
-                          index % 3 === 0 ? 'badge-react' : index % 3 === 1 ? 'badge-ts' : 'badge-node'
-                        }`}
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* View Details Button */}
-                  <div className="flex justify-end mt-4">
-                    <button
-                      onClick={() => openLightbox(project)}
-                      className="text-primary hover:text-primary-dark font-medium inline-flex items-center"
-                    >
-                      View Details <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
             ))}
           </div>
-        )}
-      </div>
+
+          {/* Admin Message */}
+          {isAdmin && (
+            <div className="card mb-8 border-l-4 border-primary">
+              <div className="flex justify-between items-center">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-foreground">
+                      Admin mode active. You can drag and drop projects to reorder them,
+                      add new projects, or remove existing ones.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAdmin(false)}
+                  className="btn btn-outline text-sm"
+                >
+                  Exit
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Add Project Button (Admin only) */}
+          {isAdmin && (
+            <div className="flex justify-end mb-8">
+              <button
+                onClick={handleOpenProjectForm}
+                className="btn btn-primary"
+              >
+                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 00-1 1v5H4a1 1 0 100 2h5v5a1 1 0 002 0v-5h5a1 1 0 100-2h-5V4a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Add New Project
+              </button>
+              <button
+                onClick={forceSaveProjects}
+                className="btn btn-primary ml-4"
+              >
+                Force Save Projects
+              </button>
+            </div>
+          )}
+
+          {/* Projects Grid with Drag & Drop in Admin Mode */}
+          {isAdmin ? (
+            renderProjects()
+          ) : (
+            // Regular projects grid for non-admin users
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProjects.map((project) => (
+                <div key={project.id} className="card animate-fade-in">
+                  {/* Project Image Placeholder */}
+                  <div className="h-48 bg-background-light relative rounded-t-xl -mt-6 -mx-6">
+                    <div className={`absolute inset-0 rounded-t-xl bg-opacity-20 ${parseInt(project.id) % 3 === 0 ? 'bg-primary' : parseInt(project.id) % 3 === 1 ? 'bg-secondary' : 'bg-accent'}`}></div>
+                    <div className="absolute inset-0 flex items-center justify-center text-white">
+                      <span className="text-lg font-semibold">{project.title}</span>
+                    </div>
+                  </div>
+
+                  {/* Project Info */}
+                  <div className="mt-4">
+                    <h3 className="font-bold text-xl mb-2">{project.title}</h3>
+                    <p className="text-foreground-muted mb-4">
+                      {project.description.length > 120
+                        ? `${project.description.substring(0, 120)}...`
+                        : project.description}
+                    </p>
+
+                    {/* Technology Tags */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {project.technologies.slice(0, 3).map((tech, index) => (
+                        <span
+                          key={index}
+                          className={`tech-badge ${
+                            index % 3 === 0 ? 'badge-react' : index % 3 === 1 ? 'badge-ts' : 'badge-node'
+                          }`}
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* View Details Button */}
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={() => openLightbox(project)}
+                        className="text-primary hover:text-primary-dark font-medium inline-flex items-center"
+                      >
+                        View Details <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Password Modal */}
       {showPasswordModal && (
@@ -806,6 +851,21 @@ export default function GalleryPage() {
                     className="w-full px-3 py-2 bg-background-light border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="https://yourproject.com"
                   />
+                </div>
+
+                <div className="mt-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="featured"
+                      checked={formValues.featured}
+                      onChange={handleFormChange}
+                      className="form-checkbox h-5 w-5 text-primary rounded border-border bg-background-light"
+                    />
+                    <span className="text-sm font-medium text-foreground-muted">
+                      Feature this project on homepage
+                    </span>
+                  </label>
                 </div>
               </div>
             </div>

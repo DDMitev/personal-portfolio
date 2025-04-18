@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ProjectItem } from '@/data/projects';
+import { loadProjects, getFeaturedProjects } from '@/utils/projectStorage';
 
 interface FeaturedProjectsProps {
   projects?: ProjectItem[];
 }
 
-// Gallery Project type matches the structure in gallery/page.tsx
-interface GalleryProject {
+// Project type now matches the utility in projectStorage.js
+interface Project {
   id: string;
   title: string;
   description: string;
@@ -17,41 +18,71 @@ interface GalleryProject {
   technologies: string[];
   githubUrl?: string;
   liveUrl?: string;
+  imageUrl?: string;
   featured: boolean;
   order: number;
 }
 
 const FeaturedProjects = ({ projects = [] }: FeaturedProjectsProps) => {
-  const [featuredProjects, setFeaturedProjects] = useState([] as GalleryProject[]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [featuredProjects, setFeaturedProjects] = useState([]);
   
-  // Load projects from localStorage (where gallery projects are stored)
+  // Load projects from localStorage using our robust utility
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        // Try to get projects from localStorage where gallery stores them
-        const savedProjects = localStorage.getItem('portfolio-projects');
+        // Get featured projects using our utility
+        const featured = getFeaturedProjects().slice(0, 3); // Take up to 3 featured projects
         
-        if (savedProjects) {
-          const parsedProjects = JSON.parse(savedProjects) as GalleryProject[];
-          // Filter to only show featured projects and sort by order
-          const featured = parsedProjects
-            .filter(project => project.featured)
-            .sort((a, b) => a.order - b.order)
-            .slice(0, 3); // Take up to 3 featured projects
-          
+        if (featured && featured.length > 0) {
+          console.log('Loaded featured projects from storage:', featured);
           setFeaturedProjects(featured);
         } else {
           // Fallback to static projects if none in localStorage
+          console.log('No featured projects found, using fallback');
           const staticFeatured = projects.slice(0, 3);
-          setFeaturedProjects(staticFeatured as unknown as GalleryProject[]);
+          setFeaturedProjects(staticFeatured as unknown as Project[]);
         }
       } catch (error) {
-        console.error('Error loading projects:', error);
+        console.error('Error loading featured projects:', error);
         // Fallback to static projects on error
-        setFeaturedProjects(projects.slice(0, 3) as unknown as GalleryProject[]);
+        setFeaturedProjects(projects.slice(0, 3) as unknown as Project[]);
+      } finally {
+        setIsLoading(false);
       }
     }
   }, [projects]);
+
+  // Don't render anything during loading to prevent flashing
+  if (isLoading) {
+    return (
+      <section className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16 animate-fade-in">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 heading-gradient inline-block">Featured Projects</h2>
+            <p className="text-lg text-foreground-muted max-w-2xl mx-auto">
+              A selection of my recent work. Each project represents a unique challenge and solution.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Loading placeholders */}
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="card animate-pulse">
+                <div className="h-48 bg-background-light rounded-lg mb-4"></div>
+                <div className="h-6 bg-background-light rounded w-3/4 mb-3"></div>
+                <div className="h-4 bg-background-light rounded w-full mb-2"></div>
+                <div className="h-4 bg-background-light rounded w-5/6 mb-4"></div>
+                <div className="flex gap-2 mb-4">
+                  <div className="h-6 bg-background-light rounded w-16"></div>
+                  <div className="h-6 bg-background-light rounded w-16"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-20 relative">
