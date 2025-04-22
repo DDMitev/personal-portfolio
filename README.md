@@ -6,10 +6,7 @@ A modern, tech-inspired portfolio website built with Next.js 14 and Tailwind CSS
 
 - **Modern Tech Design**: Dark-themed interface with glass morphism and gradient effects
 - **Interactive Project Gallery**: Browse, filter, and view detailed project information
-- **Hidden Admin Access**: Secret admin mode for content management
-  - Type "admindev" anywhere to trigger login prompt
-  - Use password "d3v2025" to access admin features
-- **Project Management**: Add, edit, delete, and reorder projects (admin mode)
+- **Project Management**: Add, edit, delete, and reorder projects (admin mode, hidden)
 - **Responsive Design**: Optimized for all devices with a mobile-first approach
 - **Contact Form**: Simple contact form with validation
 
@@ -55,8 +52,6 @@ This project is optimized for deployment on Vercel, Netlify, or GitHub Pages.
 ## Admin Features
 
 The portfolio includes a hidden admin mode for project management:
-- **Access**: Type "admindev" anywhere on the gallery page to trigger the admin login
-- **Authentication**: Use password "d3v2025" (or alternatives: "admin", "dev2025")
 - **Project Management**: 
   - Add new projects
   - Edit existing projects
